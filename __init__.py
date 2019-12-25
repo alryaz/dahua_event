@@ -108,7 +108,7 @@ class DahuaEventThread(threading.Thread):
     Devices = []
     NumActivePlayers = 0
 
-    CurlMultiObj = pycurl.CurlMulti()
+    # CurlMultiObj = pycurl.CurlMulti()
     NumRequestObjs = 0
 	
 
@@ -125,14 +125,14 @@ class DahuaEventThread(threading.Thread):
               events=device_cfg.get("events")
             )
           device = DahuaDevice(self, hass, device_cfg.get("name"), url, channel)
+          auth = HTTPDigestAuth(device_cfg.get("user"), device_cfg.get("password"))
           self.Devices.append(device)
-          hooks=dict(args=device.OnReceive))
-	  RequestObj = requests.get(url, stream=True, timeout=30,auth=HTTPDigestAuth(device_cfg.get("user"), device_cfg.get("password")))
+	  RequestObj = requests.get(url, hooks=dict(args=device.OnReceive), stream=True, timeout=30,auth=auth)
           device.RequestObj = RequestObj
-          // RequestObj.setopt(pycurl.WRITEFUNCTION, device.OnReceive)
+          # RequestObj.setopt(pycurl.WRITEFUNCTION, device.OnReceive)
 
-          // self.CurlMultiObj.add_handle.RequestObj)
-          // self.NumRequestObjs += 1
+          # self.CurlMultiObj.add_handle.RequestObj)
+          # self.NumRequestObjs += 1
 
           _LOGGER.debug("Added Dahua device at: %s", url)
 
@@ -152,7 +152,7 @@ class DahuaEventThread(threading.Thread):
             time.sleep(.05)
             Ret, NumHandles = self.CurlMultiObj.perform()
 
-            if NumHandles != self.Nu.RequestObjs:
+            if NumHandles != self.NumRequestObjs:
                 _, Success, Error = self.CurlMultiObj.info_read()
 
                 for RequestObj in Success:
@@ -177,3 +177,5 @@ class DahuaEventThread(threading.Thread):
                         self.CurlMultiObj.add_handle(DahuaDevice.RequestObj)
                         DahuaDevice.Reconnect = None
             #if Ret != pycurl.E_CALL_MULTI_PERFORM: break
+
+
