@@ -1,0 +1,33 @@
+#Example configuration.yaml
+## Describes the format for available dahua_event:
+#
+dahua_event:
+#
+  - name: Laundry
+    protocol: http
+    host: !secret laundry_cam_ip
+    port: 80
+    user: !secret nvr_username
+    password: !secret nvr_passsword
+    events: CrossLineDetection,CrossRegionDetection,LeftDetection,TakenAwayDetection,FaceDetection,AudioMutation,AudioAnomaly
+#
+  - name: kitchen
+    protocol: http
+    host: !secret kitchen_cam_ip
+    port: 80
+    user: !secret nvr_username
+    password: !secret nvr_passsword
+    events: CrossLineDetection,CrossRegionDetection,LeftDetection,TakenAwayDetection,FaceDetection,AudioMutation,AudioAnomaly
+    
+automation:
+#
+  - alias: 'Dahua camera event'
+    initial_state: 'on'
+    trigger:
+      - platform: event
+        event_type: dahua_event_received
+    action:
+      - service: notify.html5
+        data_template:
+          title: "Camera Event"
+          message: "Camera detected {{ trigger.event.data }}"

@@ -5,7 +5,6 @@ Borrowed code from https://github.com/johnnyletrois/dahua-watch
 Author: SaWey
 """
 
-REQUIREMENTS = ['pycurl>=7']
 
 import threading, logging, os, socket, pycurl, time
 import voluptuous as vol
@@ -16,8 +15,9 @@ from homeassistant.const import (
     CONF_NAME)
 
 _LOGGER = logging.getLogger(__name__)
-
 DOMAIN = 'dahua_event'
+REQUIREMENTS = ['pycurl>=7']
+
 URL_TEMPLATE = "{protocol}://{host}:{port}/cgi-bin/eventManager.cgi?action=attach&channel=1&codes=%5B{events}%5D"
 
 CONFIG_SCHEMA = vol.Schema({
