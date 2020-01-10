@@ -51,8 +51,8 @@ DEFAULT_USERNAME = "admin"
 DEFAULT_PASSWORD = "admin"
 DEFAULT_PORT = 80
 DEFAULT_AUTHENTICATION = AUTH_METHOD_DIGEST
-#DEFAULT_EVENTS = ['VideoMotion', 'CrossLineDetection', 'AlarmLocal', 'VideoLoss', 'VideoBlind']
-DEFAULT_EVENTS = ['All']
+DEFAULT_EVENTS = ['VideoMotion', 'CrossLineDetection', 'AlarmLocal', 'VideoLoss', 'VideoBlind']
+#DEFAULT_EVENTS = ['All']
 
 CHANNEL_SCHEMA = vol.Schema({
     vol.Required(CONF_NUMBER): int,
@@ -98,9 +98,9 @@ def create_threads(hass, config):
             monitored_events=device_cfg.get(CONF_EVENTS),
             use_ssl=device_cfg.get(CONF_SSL),
             auth_method=device_cfg.get(CONF_AUTHENTICATION),
-            channel=channel[CONF_NUMBER]
+            #channel=channel[CONF_NUMBER]
         )
-        for device_cfg in config for channel in device_cfg.get(CONF_CHANNELS)
+        for device_cfg in config #for channel in device_cfg.get(CONF_CHANNELS)
     ]
 
     #for device in threads:
@@ -207,9 +207,10 @@ class DahuaDevice(threading.Thread):
         resp = requests.get(
             url=event_url,
             auth=self.authenticator,
-            timeout=30
+            timeout=30,
+            stream=True
         )
-        return resp.text
+        return resp
 
     def create_request_via_httplib(self, event_url):
         if self.use_ssl:
@@ -237,16 +238,15 @@ class DahuaDevice(threading.Thread):
         })
         try:
             resp = conn.getresponse()
-            return resp.read().decode('utf-8')
+            return resp
         except socket.timeout:
             _LOGGER.debug('Socket timeout')
             return None
 
-    use_httplib = True
-
     def get_titles(self):
         if self.use_httplib:
-            data = self.create_request_via_httplib(URL_TITLES)
+            resp = self.create_request_via_httplib(URL_TITLES)
+            data = resp.read().decode('utf-8')
         else:
             data = self.create_request_via_requests(URL_TITLES)
 
@@ -263,20 +263,28 @@ class DahuaDevice(threading.Thread):
             for match in res
         }
 
-    def create_request(self, events) -> Optional[str]:
-        event_url = URL_TEMPLATE.format(channel=self.channel,events=','.join(events))
-
-        if not self.use_httplib:
-            return self.create_request_via_requests(event_url)
-        else:
-            return self.create_request_via_httplib(event_url)
-
     def run(self):
         """Fetch events"""
         while not self.stopped.isSet():
             # Sleeps to ease load on processor
 
-            data = self.create_request(self.monitored_events)
-            print('data received')
-            if data:
-                self.on_receive(data)
+            event_url = URL_TEMPLATE.format(channel=self.channel, events=','.join(self.monitored_events))
+
+            resp = self.create_request_via_httplib(event_url)
+
+            boundary_prefix_length = len('-- myboundary\r\nContent-Type: text/plain\r\nContent-Length:')
+            while True:
+                prefix = resp.read(boundary_prefix_length)
+                _LOGGER.debug('Reading prefix length: %d, content: %s' % (boundary_prefix_length, prefix))
+                content_length = bytes()
+                while True:
+                    read_char = resp.read(1)
+                    if read_char == b'\r':
+                        break
+                    content_length += read_char
+                content_length = int(content_length.decode('utf-8'))
+                resp.read(1)  # dump b'\n'
+                content = resp.read(content_length)
+                _LOGGER.debug('Read content: %s' % content)
+                self.on_receive(content.decode('utf-8'))
+                resp.read(4)  # dump b'\r\n\r\n'
