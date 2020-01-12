@@ -1,0 +1,9 @@
+{
+    "domain": "dahua_events",
+    "name": "Dahua Events",
+    "documentation": "https://github.com/alryaz/hass-component-dahua-events",
+    "dependencies": [],
+    "codeowners": ["@SaWey", "@alryaz"],
+    "requirements": ["dotty-dict==1.2.1"],
+    "config_flow": true
+}

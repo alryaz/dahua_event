@@ -9,15 +9,26 @@ dahua_event:
     port: 80
     user: !secret nvr_username
     password: !secret nvr_passsword
-    events: CrossLineDetection,CrossRegionDetection,LeftDetection,TakenAwayDetection,FaceDetection,AudioMutation,AudioAnomaly
+    events:
+      - CrossLineDetection
+      - CrossRegionDetection
+      - LeftDetection
+      - TakenAwayDetection
+      - FaceDetection
+      - AudioMutation
+      - AudioAnomaly
+    channels:
+      - number: 1
+        name: Laundromat
 #
-  - name: kitchen
+  - name: Home
     protocol: http
-    host: !secret kitchen_cam_ip
+    host: !secret home_nvr_ip
     port: 80
     user: !secret nvr_username
     password: !secret nvr_passsword
-    events: CrossLineDetection,CrossRegionDetection,LeftDetection,TakenAwayDetection,FaceDetection,AudioMutation,AudioAnomaly
+    events: [CrossLineDetection,CrossRegionDetection,LeftDetection,TakenAwayDetection,FaceDetection,AudioMutation,AudioAnomaly]
+    channels: [1,2,3,4]
     
 automation:
 #
@@ -26,8 +37,11 @@ automation:
     trigger:
       - platform: event
         event_type: dahua_event_received
+        event_data:
+          code: VideoMotion
+          action: Start
     action:
       - service: notify.html5
         data_template:
           title: "Camera Event"
-          message: "Camera detected {{ trigger.event.data }}"
+          message: "Movement detected at {{ trigger.event.data.channel_name }}"
